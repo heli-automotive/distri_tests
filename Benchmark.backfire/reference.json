@@ -1,0 +1,26 @@
+{
+    "test_sets":[
+        {
+            "name":"default",
+            "test_cases":[
+                {
+                    "name":"intervals",
+                    "measurements":[
+                        {
+                            "name":"max_interval",
+                            "unit":"us"
+                        },
+                        {
+                            "name":"min_interval",
+                            "unit":"us"
+                        },
+                        {
+                            "name":"avg_interval",
+                            "unit":"us"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

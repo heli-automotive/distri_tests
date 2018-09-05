@@ -1,0 +1,14 @@
+{
+    "testName": "Benchmark.backfire",
+    "specs": {
+        "default": {
+            "PARAMS": "-a -p99 -l100"
+        },
+        "latest": {
+            "PER_JOB_BUILD": "true",
+            "gitrepo": "https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git",
+            "gitref": "unstable/devel/latest",
+            "PARAMS": "-a -p99 -l100"
+        }
+    }
+}

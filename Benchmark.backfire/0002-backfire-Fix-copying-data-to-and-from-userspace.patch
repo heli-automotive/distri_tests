@@ -1,0 +1,80 @@
+From f8950a126420e3240233473cf5e235486aa3dc56 Mon Sep 17 00:00:00 2001
+From: Hoang Van Tuyen <tuyen.hoangvan@toshiba-tsdv.com>
+Date: Thu, 18 Jan 2018 13:49:30 +0700
+Subject: [PATCH 2/2] backfire: Fix copying data to and from userspace.
+
+Use copy_from_user and copy_to_user functions for copying between
+kernel and user space. This commit is based on a patch from Michele Dionisio:
+https://www.spinics.net/lists/linux-rt-users/msg17403.html
+
+Signed-off-by: Hoang Van Tuyen <tuyen.hoangvan@toshiba-tsdv.com>
+---
+ src/backfire/backfire.c | 30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
+
+diff --git a/src/backfire/backfire.c b/src/backfire/backfire.c
+index e05f43d..3e8dc67 100644
+--- a/src/backfire/backfire.c
++++ b/src/backfire/backfire.c
+@@ -48,6 +48,7 @@ static int backfire_open_mode; /* special open modes */
+ static struct timeval sendtime; /* when the most recent signal was sent */
+ #define BACKFIRE_WRITE 1 /* opened for writing (exclusive) */
+ #define BACKFIRE_EXCL 2 /* opened with O_EXCL */
++#define MAX_SIZE_DATA_RW 512
+
+ /*
+  * These are the file operation function for user access to /dev/backfire
+@@ -55,8 +56,17 @@ static struct timeval sendtime; /* when the most recent signal was sent */
+ static ssize_t
+ backfire_read(struct file *file, char *buf, size_t count, loff_t *ppos)
+ {
+-	return snprintf(buf, count, "%d,%d\n", (int) sendtime.tv_sec,
++	char kbuf[MAX_SIZE_DATA_RW];
++	ssize_t res;
++	if (count > MAX_SIZE_DATA_RW) {
++		count = MAX_SIZE_DATA_RW;
++	}
++	res = snprintf(kbuf, count, "%d,%d\n", (int) sendtime.tv_sec,
+		(int) sendtime.tv_usec);
++	if (copy_to_user(buf, kbuf, res+1)){
++		return -EFAULT;
++	}
++	return res;
+ }
+
+ static ssize_t
+@@ -64,16 +74,30 @@ backfire_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
+ {
+	int signo;
+	struct pid *pid;
++	char kbuf[MAX_SIZE_DATA_RW+1];
++	ssize_t retval = 0;
++
++	if (count == 0) {
++		return 0;
++	}
++	if (count > MAX_SIZE_DATA_RW) {
++		count = MAX_SIZE_DATA_RW;
++	}
++	if (copy_from_user(kbuf, buf, count)) {
++		return -EFAULT;
++	}
++	kbuf[count] = '\0';
+
+-	if (sscanf(buf, "%d", &signo) >= 1) {
++	if (sscanf(kbuf, "%d", &signo) >= 1) {
+		if (signo > 0 && signo < 32) {
+			pid = get_pid(task_pid(current));
+			do_gettimeofday(&sendtime);
+			kill_pid(pid, signo, 1);
++			retval = strlen(kbuf);
+		} else
+			printk(KERN_ERR "Invalid signal no. %d\n", signo);
+	}
+-	return strlen(buf);
++	return retval;
+ }
+
+ static int
+--
+2.1.4

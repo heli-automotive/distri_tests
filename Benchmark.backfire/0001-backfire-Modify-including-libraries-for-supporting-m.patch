@@ -1,0 +1,57 @@
+From 6ff2b16636286167287c4774feeb47fbcc569c28 Mon Sep 17 00:00:00 2001
+From: Hoang Van Tuyen <tuyen.hoangvan@toshiba-tsdv.com>
+Date: Thu, 18 Jan 2018 11:25:46 +0700
+Subject: [PATCH 1/2] backfire: Modify including libraries for supporting
+ modern kernels.
+
+The backfire driver is very old. The latest commit was from 2009.
+Ex: It does not compile since 2.6.39-rc1 when SPIN_LOCK_UNLOCKED was
+killed in d04fa5a3ba06.
+The asm/system.h was removed in Linux 3.4, commit f05e798ad4c0.
+This commit corrects using the libraries and tested on 4.14 and 3.16
+kernel versions
+
+Signed-off-by: Hoang Van Tuyen <tuyen.hoangvan@toshiba-tsdv.com>
+---
+ src/backfire/backfire.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/src/backfire/backfire.c b/src/backfire/backfire.c
+index aaf9c4a..e05f43d 100644
+--- a/src/backfire/backfire.c
++++ b/src/backfire/backfire.c
+@@ -20,23 +20,29 @@
+  */
+
+ #include <linux/module.h>
++#include <linux/version.h>
+
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
+ #include <linux/sched.h>
++#else
++#include <linux/sched/signal.h>
++#endif
+ #include <linux/cpumask.h>
+ #include <linux/time.h>
+-#include <linux/smp_lock.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+ #include <linux/miscdevice.h>
+ #include <linux/proc_fs.h>
+ #include <linux/spinlock.h>
+
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3,4,0)
+ #include <asm/system.h>
++#endif
+
+ #define BACKFIRE_MINOR MISC_DYNAMIC_MINOR
+
+-static spinlock_t backfire_state_lock = SPIN_LOCK_UNLOCKED;
++static DEFINE_SPINLOCK(backfire_state_lock);
+ static int backfire_open_cnt; /* #times opened */
+ static int backfire_open_mode; /* special open modes */
+ static struct timeval sendtime; /* when the most recent signal was sent */
+--
+2.1.4

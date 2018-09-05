@@ -1,0 +1,26 @@
+{
+    "schema_version":"1.0",
+    "criteria":[
+        {
+            "tguid":"default.intervals.max_interval",
+            "reference":{
+                "value":100,
+                "operator":"le"
+            }
+        },
+        {
+            "tguid":"default.intervals.min_interval",
+            "reference":{
+                "value":100,
+                "operator":"le"
+            }
+        },
+        {
+            "tguid":"default.intervals.avg_interval",
+            "reference":{
+                "value":100,
+                "operator":"le"
+            }
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+{
+	"chart_type": "measure_plot",
+	"measures": ["default.intervals.max_interval",
+        "default.intervals.avg_interval"]
+}

@@ -1,0 +1,148 @@
+device_type: r8a7796-m3ulcb
+job_name: AGL-short-smoke-wip
+
+timeouts:
+  job:
+    minutes: 30
+  action:
+    minutes: 15
+  connection:
+    minutes: 5
+priority: medium
+visibility: public
+
+protocols:
+  lava-xnbd:
+    port: auto
+
+actions:
+- deploy:
+    timeout:
+      minutes: 15
+    to: nbd
+    os: oe
+    failure_retry: 2
+    protocols:
+      lava-xnbd:
+      - action: nbd-deploy
+        request: set_port
+    kernel:
+      url: http://10.167.218.43:8080/fuego/userContent/nbdboot/m3ulcb/eel_5.1.0/Image
+    initrd:
+      url: http://10.167.218.43:8080/fuego/userContent/nbdboot/m3ulcb/eel_5.1.0/initramfs-netboot-image-m3ulcb-20180726064623.rootfs.ext4.gz
+      compression: gz
+      allow_modify: false
+    nbdroot:
+      url: http://10.167.218.43:8080/fuego/userContent/nbdboot/m3ulcb/eel_5.1.0/agl-image-ivi-crosssdk-m3ulcb-20180726064623.rootfs.ext4.xz
+      compression: xz
+    dtb:
+      url: http://10.167.218.43:8080/fuego/userContent/nbdboot/m3ulcb/eel_5.1.0/Image-r8a7796-m3ulcb.dtb
+
+- boot:
+    timeout:
+      minutes: 10
+    method: u-boot
+#   root: /dev/mmcblk1p2
+    prompts:
+      - "root@m3ulcb:~"
+      - "m3ulcb:~#"
+      - '/ #'
+
+    auto_login:
+      login_prompt: "login:"
+      username: root
+    commands: nbd
+    type: booti
+    transfer_overlay:
+      download_command: ifconfig eth0 192.168.10.6; wget
+      unpack_command: tar -C / -xvpf
+
+- test:
+    timeout:
+      minutes: 2
+    definitions:
+    - repository:
+        metadata:
+          format: Lava-Test Test Definition 1.0
+          name: inline-test
+          description: "Inline test to validate test framewrok health"
+          os:
+          - debian
+          scope:
+          - functional
+        run:
+          steps:
+          - lava-test-set start set-pass
+          - lava-test-case always-pass --shell true
+          - lava-test-set stop set-pass
+          - lava-test-set start set-fail
+          - lava-test-case always-fail --shell false
+          - lava-test-set stop set-fail
+      from: inline
+      name: health-test
+      path: inline/health-test.yaml
+
+# Jenkins "Functional.bc" yaml file
+#params:
+#  FUEGO_SERVER_IP: "192.168.10.75"
+#  FUEGO_SERVER_PORT: "8010"
+#
+#- test:
+#    timeout:
+#      minutes: 2
+#    definitions:
+#    - repository:
+#        metadata:
+#          fuego_package_version: 1
+#          name: Functional.bc
+#          description: |
+#              Sample test that does very primitive tests of the 'bc'
+#              command.  It is mainly used as a demonstration of how tests
+#              and test specs should be written.  It relies on 'bc' already
+#              being installed on the target.
+#          license: MIT
+#          author: Cogent Embedded
+#          maintainer: Tim Bird <tim.bird@sony.com>
+#          version: 0.6
+#          fuego_release: 1
+#          type: Functional
+#          tags: ['example']
+#          data_files: ['bc-script.tar.gz', 'spec.json']
+#      metadata:
+#        format: Lava-Test Test Definition 1.0
+#        name: inline-test
+#        description: "Inline test to validate tool bc"
+#        os:
+#        - debian
+#        scope:
+#        - functional
+#        run:
+#          steps:
+#          # tar zcpf dir.tar.gz ./dir
+#          - wget http://192.168.10.75:8010/fuego/userContent/build/Functional.bc-porter.tar.gz
+#          - tar -xzvf Functional.bc-porter.tar.gz
+#          - cd Functional.bc-porter
+#          - lava-test-case function_bc-test-pwd --shell pwd
+#          - lava-test-case function_bc-test-calc-pass --shell ./bc-device.sh 2+2 4
+#          - lava-test-case function_bc-test-calc-fail --shell ./bc-device.sh 2+2 5
+#        test-case-deps:
+#            - tar-repo: http://$FUEGO_SERVER_IP:$FUEGO_SERVER_PORT/fuego/userContent/build/Functional.bc-m3ulcb/*zip*/Functional.bc-m3ulcb.zip
+#      from: inline
+#      name: bc-test
+#      path: inline/bc-test.yaml
+#
+#- test:
+#    definitions:
+#    - repository: https://git.automotivelinux.org/src/qa-testdefinitions
+#      from: git
+#      path: test-suites/short-smoke/busybox.yaml
+#      name: busybox
+#    - repository: https://git.automotivelinux.org/src/qa-testdefinitions
+#      from: git
+#      path: test-suites/short-smoke/smoke-tests-basic.yaml
+#      name: smoke-tests-basic
+#    - repository: https://git.automotivelinux.org/src/qa-testdefinitions
+#      from: git
+#      path: test-suites/short-smoke/service-check.yaml
+#      name: service-check
+

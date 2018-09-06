@@ -1,0 +1,19 @@
+fuego_package_version: 1
+name: Functional.lava
+description: |
+    Lava CI tools and templates of AGL
+license: MIT
+author: AGL(Automotive Grade Linux)
+maintainer: Liu Wenlong <liuwl.fnst@cn.fujitsu.com>
+# this version number is kind of made-up
+version: 5.99.5
+fuego_release: 1
+type: Functional
+tags: ['LAVA']
+gitrepo: https://git.automotivelinux.org/AGL/releng-scripts
+data_files:
+    - releng-scripts.tar.gz
+    - spec.json
+    - parser.py
+    - fuego_test.sh
+    - test.yaml

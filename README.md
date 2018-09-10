@@ -2,8 +2,8 @@
 
     As what I said at the ALS meeting(June 2018, Tokyo), in a sense,
     Fuego is similar to Yocto, because both of them know:
-    - where is the sourcecode(tarball or giturl)
-    - how to build
+    - where is the sourcecode(tarball or gitrepo)
+    - how to build and maketar
     - what artifacts should be added/deployed to the final distro/targets
 
     Now, I think we can develop those tests(Functinal/Benchmark) outside upstream
@@ -19,5 +19,18 @@
     when they're using Fuego.
     It's similar to the "tests market" in Fuego(Tim's) mid/long term plan.
 
-    (This is just my own tentative plan above)
+    About AGL tests development:
+    We can develop AGL related tests in upstream AGL, e.g. application related tests.
+    AGL developers are more familiar with those tests, so it can help us to review/
+    merge patches easily and properly. 
+    During development, the sourcecode and Functional/Benchmark tests related scripts
+    can be released together.
+    During testsing, the sourcecode and Functional/Benchmark tests related scripts
+    can be pulled together from upstream.
+    (The above may not be the same as the current ideas.
+     The current ideas:
+     - Fuego: wants more generic tests
+     - AGL: to maintain those tests in Fuego)
+
+    (This is just my own tentative idea above)
 

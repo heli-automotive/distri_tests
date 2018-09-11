@@ -6,15 +6,17 @@ FUEGO_TEST_PHASES="pre_check build deploy run processing"
 FUNCTIONAL_LAVA_PER_JOB_BUILD=true
 source /fuego-ro/boards/$NODE_NAME.lava
 
+#TODO: test_pre_check should be called outside pre_test?
 function test_pre_check {
-    # the "pre_test" was skipped, so we need to set the following env variables manually.
+    # phase "pre_test" is skipped, so we need to set the following env variables manually.
+    # TODO: source toolchain.sh outside phase "pre_test" and get the FWVER from LAVA outputs
     export PLATFORM="unknow"
     export FWVER="unknow"
-    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-    unset PYTHONHOME
 
-    which lava-tool || echo "Warning: lava-tool missing in your test framework."
-    # add some check for lava-tool and lava-tool auth-list/token/passwd/etc.
+    assert_define LAVA_USER
+    assert_define LAVA_HOST
+
+    which lava-tool > /dev/null || echo "Warning: lava-tool missing in your test framework."
 
     #echo "default keyring config"
     if [ ! -d ~/.local/share/python_keyring/ ] ; then
@@ -27,10 +29,6 @@ function test_pre_check {
 default-keyring=keyring.backends.file.PlaintextKeyring
 EOF
 
-    assert_define LAVA_USER
-    assert_define LAVA_HOST
-
-    # auth .... should better be done with jenkins auth injection plugin ...
     cat <<EOF > ./token
 $LAVA_TOKEN
 EOF
@@ -40,21 +38,18 @@ EOF
 }
 
 function test_build {
-    # to use "ftc" tool to build and make tar for other tests, e.g. Functional.bc.
-    # generate lava yaml test file.
-
     [ -n "$FUNCTIONAL_LAVA_FILE_SERVER" ] || FUNCTIONAL_LAVA_FILE_SERVER=$DEFAULT_FILE_SERVER
-    if [ -n "$FUNCTIONAL_LAVA_FILE_SERVER" ]; then
-        sed -i.bak "s@http://download.automotivelinux.org/AGL/release/eel/5.0.0/@${FUNCTIONAL_LAVA_FILE_SERVER}@g" templates/config/default.cfg
-        sed -i.bak "s@http://download.automotivelinux.org/AGL/release/dab/4.0.2/@${FUNCTIONAL_LAVA_FILE_SERVER}@g" templates/config/default.cfg
-        sed -i.bak "s@http://download.automotivelinux.org/AGL/release/@${FUNCTIONAL_LAVA_FILE_SERVER}@g" templates/config/default.cfg
-        sed -i.bak "s@http://download.automotivelinux.org/AGL/snapshots/@${FUNCTIONAL_LAVA_FILE_SERVER}@g" templates/config/default.cfg
-        sed -i.bak "s@http://download.automotivelinux.org/AGL/upload/ci/@${FUNCTIONAL_LAVA_FILE_SERVER}@g" templates/config/default.cfg
-    fi
-
-    # -u(--url) https://download-images-url
     [ -n "$FUNCTIONAL_LAVA_BOOT_TYPE" ] || FUNCTIONAL_LAVA_BOOT_TYPE=$DEFAULT_LAVA_BOOT_TYPE
-    ./utils/create-jobs.py --machine $LAVA_MACHINE_TYPE --test health-test --boot ${FUNCTIONAL_LAVA_BOOT_TYPE} > test.yaml
+
+    JOB_OPTS="--test health-test"
+    [ -n $LAVA_MACHINE_TYPE ] && JOB_OPTS="${JOB_OPTS} --machine $LAVA_MACHINE_TYPE" \
+                              || abort_job "Please define LAVA_MACHINE_TYPE in your lava board file."
+    [ -n "$FUNCTIONAL_LAVA_BOOT_TYPE" ] && JOB_OPTS="${JOB_OPTS} --boot ${FUNCTIONAL_LAVA_BOOT_TYPE}"
+    [ -n "$FUNCTIONAL_LAVA_FILE_SERVER" ] && JOB_OPTS="${JOB_OPTS} --url $FUNCTIONAL_LAVA_FILE_SERVER"
+
+    #TODO: add more options, e.g. to use --kernel-img to specify the name of the kernel to boot
+    echo "Job creation: ./utils/create-jobs.py ${JOB_OPTS}"
+    ./utils/create-jobs.py ${JOB_OPTS} > test.yaml
 
     if [ -n "$FUNCTIONAL_LAVA_TESTSUITE_REPO" –a –n "$FUNCTIONAL_LAVA_TESTSUITE_PATH" ]; then
         echo "-test:" >> test.yaml
@@ -64,11 +59,11 @@ function test_build {
         echo "      path: $FUNCTIONAL_LAVA_TESTSUITE_PATH" >> test.yaml
         echo "      name: ${FUNCTIONAL_LAVA_TESTSUITE_NAME:-default-tests}" >> test.yaml
     fi
+
+    # TODO: add support to validate the definition of test.yaml.
 }
 
 function test_deploy {
-    # this step will be done in LAVA side.
-    # no need to check the test_deploy status.
     echo "test_deploy finished successfully."
 }
 
@@ -76,6 +71,7 @@ function test_run {
     LAVA_JOB_ID=0
     LAVA_JOB_STATUS="Submitted"
 
+    #  It will be more flexible if not using "lava-tool block" here.
     echo "lava-tool: submit-job test.yaml to $LAVA_HOST with user($LAVA_USER)..."
     lava-tool submit-job http://$LAVA_USER@$LAVA_HOST test.yaml | tee tmp_submit.txt
     LAVA_JOB_ID=`cat tmp_submit.txt | grep -i "job id" | awk '{print $5}' | tr -d '\r'`
@@ -106,6 +102,6 @@ function test_run {
 }
 
 function test_processing {
-    # TODO: output analysis
+    # TODO: get more useful outputs from LAVA side
     log_compare "$TESTDIR" "0" "OK" "p"
 }

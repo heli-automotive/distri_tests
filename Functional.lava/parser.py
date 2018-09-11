@@ -57,6 +57,8 @@ for line in lines:
         else:
             status = "FAIL"
 
+        #TODO: it will be better if the LAVA related testcases can be
+        #      listed in execution time order in the final test report.
         while test_set + '.' + fin_case in test_results.keys():
             fin_case = test_case + '-' + str(icnt)
             icnt += 1

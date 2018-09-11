@@ -51,7 +51,7 @@ function test_build {
     echo "Job creation: ./utils/create-jobs.py ${JOB_OPTS}"
     ./utils/create-jobs.py ${JOB_OPTS} > test.yaml
 
-    if [ -n "$FUNCTIONAL_LAVA_TESTSUITE_REPO" –a –n "$FUNCTIONAL_LAVA_TESTSUITE_PATH" ]; then
+    if [ -n "$FUNCTIONAL_LAVA_TESTSUITE_REPO" -a -n "$FUNCTIONAL_LAVA_TESTSUITE_PATH" ]; then
         echo "-test:" >> test.yaml
         echo "    definitions:" >> test.yaml
         echo "    - repository: $FUNCTIONAL_LAVA_TESTSUITE_REPO" >> test.yaml
